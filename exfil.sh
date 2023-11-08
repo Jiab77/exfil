@@ -13,18 +13,19 @@
 # - Implement 'tor' support
 # - Implement 'gpg' support
 #
-# Version 0.0.3
+# Version 0.0.4
 
 # Options
 set +o xtrace
 
 # Config
-ENC_ALGO="chacha20"
-# ENC_ALGO="aes-256-cbc"
 SVC_NAME="transfer.sh"
 SVC_URL="https://transfer.sh"
+ENC_ALGO_OSSL="chacha20"
+ENC_ALGO_GPG="aes256"
 ALLOW_FOLDERS=true
 USE_TOR=false
+TOR_PROXY="socks5h://127.0.0.1:9050"
 
 # Internals
 SCR_NAME="$(basename "$0")"
@@ -45,14 +46,22 @@ function die() {
 function enc_file() {
     if [[ -n $BIN_CURL ]]; then
         if [[ $USE_TOR == false ]]; then
-            openssl "$ENC_ALGO" -pbkdf2 -e -in "$1" | curl -X PUT --upload-file "-" "$SVC_URL"/"$(basename "$1")"
+            if [[ -n $BIN_OSSL ]]; then
+                openssl "$ENC_ALGO_OSSL" -pbkdf2 -e -in "$1" | curl -X PUT -fsSL --progress-bar --upload-file "-" "$SVC_URL"/"$(basename "$1")"
+            else
+                gpg -ac --cipher-algo="$ENC_ALGO_GPG" -o- "$1" | curl -X PUT -fsSL --progress-bar --upload-file "-" "$SVC_URL"/"$(basename "$1")"
+            fi
         else
             die "Tor support is not implemented yet, please set 'USE_TOR' to 'false' without quotes."
         fi
     else
         local TMP_FILE ; TMP_FILE="$(mktemp)"
         if [[ $USE_TOR == false ]]; then
-            openssl "$ENC_ALGO" -pbkdf2 -e -in "$1" -out "$TMP_FILE" | wget --method PUT --body-file="$TMP_FILE" "$SVC_URL"/"$(basename "$1")" -O - -nv
+            if [[ -n $BIN_OSSL ]]; then
+                openssl "$ENC_ALGO_OSSL" -pbkdf2 -e -in "$1" -out "$TMP_FILE" | wget --method PUT --body-file="$TMP_FILE" "$SVC_URL"/"$(basename "$1")" -O - -nv --progress=bar:force:noscroll
+            else
+                gpg -ac --cipher-algo "$ENC_ALGO_GPG" -o "$TMP_FILE" "$1" | wget --method PUT --body-file="$TMP_FILE" "$SVC_URL"/"$(basename "$1")" -O - -nv --progress=bar:force:noscroll
+            fi
         else
             die "Tor support is not implemented yet, please set 'USE_TOR' to 'false' without quotes."
         fi
@@ -87,13 +96,21 @@ function enc_download() {
     echo -e "\nDownload / Decrypt...\n"
     if [[ -n $BIN_CURL ]]; then
         if [[ $USE_TOR == false ]]; then
-            curl -s "$1" | openssl "$ENC_ALGO" -pbkdf2 -d > "$(basename "$1")"
+            if [[ -n $BIN_OSSL ]]; then
+                curl -fsSL --progress-bar "$1" | openssl "$ENC_ALGO_OSSL" -pbkdf2 -d > "$(basename "$1")"
+            else
+                curl -fsSL --progress-bar "$1" | gpg -o- > "$(basename "$1")"
+            fi
         else
             die "Tor support is not implemented yet, please set 'USE_TOR' to 'false' without quotes."
         fi
     else
         if [[ $USE_TOR == false ]]; then
-            wget -q "$1" -O - | openssl "$ENC_ALGO" -pbkdf2 -d > "$(basename "$1")"
+            if [[ -n $BIN_OSSL ]]; then
+                wget -q --progress=bar:force:noscroll "$1" -O - | openssl "$ENC_ALGO_OSSL" -pbkdf2 -d > "$(basename "$1")"
+            else
+                wget -q --progress=bar:force:noscroll "$1" -O - | gpg -o- > "$(basename "$1")"
+            fi
         else
             die "Tor support is not implemented yet, please set 'USE_TOR' to 'false' without quotes."
         fi
@@ -139,8 +156,7 @@ function print_help() {
 [[ $# -eq 0 ]] && print_usage
 [[ $1 == "-h" || $1 == "--help" ]] && print_help
 [[ -z $BIN_CURL || -z $BIN_WGET ]] && print_missing "curl' or 'wget"
-[[ -z $BIN_OSSL ]] && print_missing "openssl"
-# [[ -z $BIN_GPG || -z $BIN_OSSL ]] && print_missing "gpg' or 'openssl"
+[[ -z $BIN_OSSL || -z $BIN_GPG ]] && print_missing "openssl' or 'gpg"
 
 # Main
 if [[ $# -eq 1 && -r "$1" ]]; then
