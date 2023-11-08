@@ -42,7 +42,7 @@ Examples:
 * [X] Folder support
 * [X] `curl` / `wget` support
 * [X] `openssl` support
-* [ ] `gpg` support
+* [X] `gpg` support
 * [ ] `tor` support
 
 ## Author
