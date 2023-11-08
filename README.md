@@ -14,7 +14,7 @@ Edit the script to set/change the defined web service.
 
 Here are the default options:
 
-* Encryption: [AES-256-CBC](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_block_chaining_(CBC))
+* Encryption: <!-- [AES-256-CBC](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_block_chaining_(CBC)) --> [ChaCha20-Poly1305](https://en.wikipedia.org/wiki/ChaCha20-Poly1305)
 * Web Service: [transfer.sh](https://transfer.sh/)
 
 ## Usage

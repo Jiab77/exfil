@@ -13,13 +13,14 @@
 # - Implement 'tor' support
 # - Implement 'gpg' support
 #
-# Version 0.0.2
+# Version 0.0.3
 
 # Options
 set +o xtrace
 
 # Config
-ENC_ALGO="aes-256-cbc"
+ENC_ALGO="chacha20"
+# ENC_ALGO="aes-256-cbc"
 SVC_NAME="transfer.sh"
 SVC_URL="https://transfer.sh"
 ALLOW_FOLDERS=true
