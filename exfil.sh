@@ -11,9 +11,8 @@
 #
 # Todo:
 # - Implement 'tor' support
-# - Implement 'gpg' support
 #
-# Version 0.0.4
+# Version 0.0.5
 
 # Options
 [[ -r $HOME/.debug ]] && set -o xtrace || set +o xtrace
@@ -149,7 +148,8 @@ function print_help() {
         echo -e "  * $SCR_NAME -s <file>"
         echo -e "  * $SCR_NAME -d <url>"
     fi
-    exit 0
+    echo
+    exit
 }
 
 # Checks
